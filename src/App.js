@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-//import logo from ‘./logo.svg’;
+import Modal from 'react-modal';
 import './App.css';
 import web3 from './web3';
 import ipfs from './ipfs';
@@ -10,17 +10,33 @@ import {Form} from 'react-bootstrap';
 
 class App extends Component 
 {
-  state = 
+  constructor()
   {
-    ipfsHash:null,
-    buffer:'',
-    ethAddress:'',
-    blockNumber:'',
-    transactionHash:'',
-    gasUsed:'',
-    txReceipt: '',
-    postContent: ''  
-  };
+    super();
+    this.state = 
+    {
+      ipfsHash:'Post Wisp',
+      buffer:'',
+      ethAddress:'',
+      blockNumber:'',
+      transactionHash:'',
+      gasUsed:'',
+      txReceipt: '',
+      postContent: '',
+      showModal: false
+    }
+
+    this.handleOpenModal = this.handleOpenModal.bind(this);
+    this.handleCloseModal = this.handleCloseModal.bind(this);
+  }
+
+  handleOpenModal () {
+    this.setState({ showModal: true });
+  }
+  
+  handleCloseModal () {
+    this.setState({ showModal: false });
+  }
 
   onSubmit = async (event) => 
   {
@@ -78,7 +94,6 @@ class App extends Component
     });
   }
 
-
   render() 
   {
     return (
@@ -102,6 +117,17 @@ class App extends Component
     </Form>
     <hr/>
     </Container>
+    <button onClick={this.handleOpenModal}>
+      Trigger Modal
+    </button>
+    <Modal
+      isOpen={this.state.showModal}
+      contentLabel="Minimal Modal Example"
+    >
+    <button onClick={this.handleCloseModal}>
+      Close Modal
+    </button>
+    </Modal>
     </div>
       );
   } //render
