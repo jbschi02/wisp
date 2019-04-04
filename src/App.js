@@ -98,35 +98,35 @@ class App extends Component
   {
     return (
     <div className="App">
-    <header className="App-header">
+    <header className="App-header"> 
+       <div className="main">
        <h1>Wisp</h1>
+       <button onClick={this.handleOpenModal} className="postWispButton">
+       Post New Wisp
+       </button>
+       </div>
     </header>
-     <hr />
-     <Container>
-      <h3>Post Wisp</h3>
+    <Modal
+      isOpen={this.state.showModal}
+      contentLabel="PostWispModal"
+    >
+    <Container>
+      <h3 className="App-header">Post Wisp</h3>
       <Form onSubmit={this.onSubmit}>
       <textarea
           value = {this.state.postContent}
           onChange = {e => this.handleChange(e, "postContent")}
       />
-      <Button 
-          bsStyle="primary" 
+      <Button
+          className="postWispButtonModal"
           type="submit"> 
           Send Wisp
       </Button>
+      <button onClick={this.handleCloseModal} className="closeModalButton">
+        Cancel
+      </button>
     </Form>
-    <hr/>
     </Container>
-    <button onClick={this.handleOpenModal}>
-      Trigger Modal
-    </button>
-    <Modal
-      isOpen={this.state.showModal}
-      contentLabel="Minimal Modal Example"
-    >
-    <button onClick={this.handleCloseModal}>
-      Close Modal
-    </button>
     </Modal>
     </div>
       );
