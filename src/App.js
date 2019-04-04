@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-//import logo from ‘./logo.svg’;
+import Modal from 'react-modal';
 import './App.css';
 import web3 from './web3';
 import ipfs from './ipfs';
@@ -10,17 +10,33 @@ import {Form} from 'react-bootstrap';
 
 class App extends Component 
 {
-  state = 
+  constructor()
   {
-    ipfsHash:null,
-    buffer:'',
-    ethAddress:'',
-    blockNumber:'',
-    transactionHash:'',
-    gasUsed:'',
-    txReceipt: '',
-    postContent: ''  
-  };
+    super();
+    this.state = 
+    {
+      ipfsHash:'Post Wisp',
+      buffer:'',
+      ethAddress:'',
+      blockNumber:'',
+      transactionHash:'',
+      gasUsed:'',
+      txReceipt: '',
+      postContent: '',
+      showModal: false
+    }
+
+    this.handleOpenModal = this.handleOpenModal.bind(this);
+    this.handleCloseModal = this.handleCloseModal.bind(this);
+  }
+
+  handleOpenModal () {
+    this.setState({ showModal: true });
+  }
+  
+  handleCloseModal () {
+    this.setState({ showModal: false });
+  }
 
   onSubmit = async (event) => 
   {
@@ -78,30 +94,40 @@ class App extends Component
     });
   }
 
-
   render() 
   {
     return (
     <div className="App">
-    <header className="App-header">
+    <header className="App-header"> 
+       <div className="main">
        <h1>Wisp</h1>
+       <button onClick={this.handleOpenModal} className="postWispButton">
+       Post New Wisp
+       </button>
+       </div>
     </header>
-     <hr />
-     <Container>
-      <h3>Post Wisp</h3>
+    <Modal
+      isOpen={this.state.showModal}
+      contentLabel="PostWispModal"
+    >
+    <Container>
+      <h3 className="App-header">Post Wisp</h3>
       <Form onSubmit={this.onSubmit}>
       <textarea
           value = {this.state.postContent}
           onChange = {e => this.handleChange(e, "postContent")}
       />
-      <Button 
-          bsStyle="primary" 
+      <Button
+          className="postWispButtonModal"
           type="submit"> 
           Send Wisp
       </Button>
+      <button onClick={this.handleCloseModal} className="closeModalButton">
+        Cancel
+      </button>
     </Form>
-    <hr/>
     </Container>
+    </Modal>
     </div>
       );
   } //render
