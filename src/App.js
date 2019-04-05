@@ -87,49 +87,76 @@ class App extends Component
 
   handleChange(e, field) 
   {
-    console.log('hello');
     this.setState(
     {
       [field]: e.target.value
     });
   }
 
+  renderWisps() {
+    var elements = [];
+    for (var i = 0; i < 5; i++)
+    {
+      elements.push(
+      <div>
+        <div>
+          <div className="wispPost">
+            <header> 
+            <div>
+            Wisp
+            </div>
+            </header>
+          </div>
+        </div>
+      </div>
+      )
+    }
+    return elements;
+  }
+
   render() 
   {
     return (
-    <div className="App">
-    <header className="App-header"> 
-       <div className="main">
-       <h1>Wisp</h1>
-       <button onClick={this.handleOpenModal} className="postWispButton">
-       Post New Wisp
-       </button>
-       </div>
-    </header>
-    <Modal
-      isOpen={this.state.showModal}
-      contentLabel="PostWispModal"
-    >
-    <Container>
-      <h3 className="App-header">Post Wisp</h3>
-      <Form onSubmit={this.onSubmit}>
-      <textarea
-          value = {this.state.postContent}
-          onChange = {e => this.handleChange(e, "postContent")}
-      />
-      <Button
-          className="postWispButtonModal"
-          type="submit"> 
-          Send Wisp
-      </Button>
-      <button onClick={this.handleCloseModal} className="closeModalButton">
-        Cancel
-      </button>
-    </Form>
-    </Container>
-    </Modal>
+    <div>
+      <div className="App">
+      <header className="App-header"> 
+         <div className="main">
+         <h1>Wisp</h1>
+         <button onClick={this.handleOpenModal} className="postWispButton">
+         Post New Wisp
+         </button>
+         </div>
+      </header>
+      <Modal
+        isOpen={this.state.showModal}
+        contentLabel="PostWispModal"
+      >
+      <Container>
+        <h3 className="App-header">Post Wisp</h3>
+        <Form onSubmit={this.onSubmit}>
+        <textarea
+            value = {this.state.postContent}
+            onChange = {e => this.handleChange(e, "postContent")}
+        />
+        <Button
+            className="postWispButtonModal"
+            type="submit"> 
+            Send Wisp
+        </Button>
+        <button onClick={this.handleCloseModal} className="closeModalButton">
+          Cancel
+        </button>
+      </Form>
+      </Container>
+      </Modal>
+      </div>
+      
+      <div>
+        {this.renderWisps()}
+      </div>
+    
     </div>
-      );
+    );
   } //render
 } //App
 export default App;
