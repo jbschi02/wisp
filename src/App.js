@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
+import ReactNotifications from 'react-browser-notifications';
 import './App.css';
 import web3 from './web3';
 import ipfs from './ipfs';
@@ -15,7 +16,7 @@ class App extends Component
     super();
     this.state = 
     {
-      ipfsHash:'Post Wisp',
+      ipfsHash:'',
       buffer:'',
       ethAddress:'',
       blockNumber:'',
@@ -28,6 +29,13 @@ class App extends Component
 
     this.handleOpenModal = this.handleOpenModal.bind(this);
     this.handleCloseModal = this.handleCloseModal.bind(this);
+    this.showNotifications = this.showNotifications.bind(this);
+  }
+
+ showNotifications() {
+    // If the Notifications API is supported by the browser
+    // then show the notification
+    if(this.n.supported()) this.n.show();
   }
 
   handleOpenModal () {
@@ -70,9 +78,8 @@ class App extends Component
       console.warn(err,ipfsHash);
       //setState by setting ipfsHash to ipfsHash[0].hash 
       this.setState({ ipfsHash:ipfsHash[0].hash });
-      // call Ethereum contract method "sendHash" and .send IPFS hash to etheruem contract 
+      // call Ethereum contract method "sendHash" and send IPFS hash to etheruem contract 
       //return the transaction hash from the ethereum contract
-      //see, this https://web3js.readthedocs.io/en/1.0/web3-eth-contract.html#methods-mymethod-send
 
       storehash.methods.sendHash(this.state.ipfsHash).send(
       {
@@ -82,7 +89,8 @@ class App extends Component
         console.log(transactionHash);
         this.setState({transactionHash});
       }); //storehash 
-    }) //await ipfs.add 
+    }) //await ipfs.add
+    this.handleCloseModal(); 
   }; //onSubmit
 
   handleChange(e, field) 
@@ -155,6 +163,15 @@ class App extends Component
         {this.renderWisps()}
       </div>
     
+      <ReactNotifications
+        onRef={ref => (this.n = ref)} // Required
+        title="Hey There!" // Required
+        body="This is the body"
+        icon="icon.png"
+        tag="abcdef"
+        timeout="2000"
+      />
+
     </div>
     );
   } //render
