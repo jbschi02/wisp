@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import Modal from 'react-modal';
-import ReactNotifications from 'react-browser-notifications';
 import './App.css';
 import web3 from './web3';
 import ipfs from './ipfs';
@@ -29,13 +28,6 @@ class App extends Component
 
     this.handleOpenModal = this.handleOpenModal.bind(this);
     this.handleCloseModal = this.handleCloseModal.bind(this);
-    this.showNotifications = this.showNotifications.bind(this);
-  }
-
- showNotifications() {
-    // If the Notifications API is supported by the browser
-    // then show the notification
-    if(this.n.supported()) this.n.show();
   }
 
   handleOpenModal () {
@@ -78,6 +70,7 @@ class App extends Component
       console.warn(err,ipfsHash);
       //setState by setting ipfsHash to ipfsHash[0].hash 
       this.setState({ ipfsHash:ipfsHash[0].hash });
+      console.log(ipfsHash);
       // call Ethereum contract method "sendHash" and send IPFS hash to etheruem contract 
       //return the transaction hash from the ethereum contract
 
@@ -103,17 +96,25 @@ class App extends Component
 
   renderWisps() {
     var elements = [];
-    for (var i = 0; i < 5; i++)
+    for (var i = 0; i < 10; i++)
     {
       elements.push(
       <div>
         <div>
           <div className="wispPost">
             <header> 
-            <div>
-            Wisp
+            <div className="wispPostOwner">
+            John Schieman
             </div>
             </header>
+            <div className="wispPostBody">
+              <div>
+              Sample Wisp
+              </div>
+              <div className="wispPostDate">
+              4/8/2019
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -162,16 +163,6 @@ class App extends Component
       <div>
         {this.renderWisps()}
       </div>
-    
-      <ReactNotifications
-        onRef={ref => (this.n = ref)} // Required
-        title="Hey There!" // Required
-        body="This is the body"
-        icon="icon.png"
-        tag="abcdef"
-        timeout="2000"
-      />
-
     </div>
     );
   } //render
