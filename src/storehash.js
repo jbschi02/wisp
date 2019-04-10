@@ -3,7 +3,7 @@ import web3 from './web3';
 //access our local copy to contract deployed on rinkeby testnet
 
 
-const address = '0x80f9773e0ef0a77f9d3f28e2ee796ffe9e870086';
+const address = '0x4cfe9aa1b4d75858d958ea9c520f51e4fb73d2ce';
 
 const abi = [
 	{

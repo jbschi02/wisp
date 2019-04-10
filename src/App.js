@@ -84,36 +84,18 @@ class App extends Component
       }); //storehash 
     }) //await ipfs.add
 
-    console.log(accounts[0].toString());
-    await storehash.methods.addToUserInfoMap(accounts[0].toString(), this.state.ipfsHash).send(
-      {
-        from: accounts[0]
-      }, (error, result) => {
-        if (error) {
-          console.log(error);
-        }
-        else {
-          storehash.methods.getUserInfoIpfsHash(accounts[0].toString()).call((error, result) => {
-            if (error) {
-              console.log(error);
-            }
-            else {
-              console.log('Result: ', result);
-            }
-          });
-        }
-      });
-
-
-    storehash.methods.returnX().call((error, result) => {
-    if (error) {
-      console.log('Error: ', error);
+    storehash.methods.getUserInfoIpfsHash(accounts[0].toString()).call((error, result) => {
+      if (error) {
+        console.log(error);
       }
-      console.log('Result: ', result);
+      else if (result === '') {
+        //add user to map
+        this.addUserToMap(accounts);
+      }
+      else {
+        console.log('Already in map: ', result);
+      }
     });
-
-
-
     this.handleCloseModal(); 
   }; //onSubmit
 
@@ -125,12 +107,77 @@ class App extends Component
     });
   }
 
+  async addUserToMap(accounts)
+  {
+    // Create JSON string
+    const obj = 
+    {
+      "address": accounts[0], 
+      "alias": "sampleAlias",
+      "postsPage": 'f7hewq7fh32rh93'
+    };
+    const stringToWrite = JSON.stringify(obj, null, '  ')
+        // Add a space after every key, before the `:`:
+        .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+    console.log(stringToWrite);
+    const buffer = await Buffer.from(stringToWrite);
+    this.setState({buffer});
+
+    //save document to IPFS,return its hash#, and set hash# to state
+    //https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/FILES.md#add 
+    await ipfs.add(this.state.buffer, (err, ipfsHash) => 
+    {
+      console.warn(err,ipfsHash);
+      //setState by setting ipfsHash to ipfsHash[0].hash 
+      this.setState({ ipfsHash:ipfsHash[0].hash });
+      console.log(ipfsHash);
+      // call Ethereum contract method "sendHash" and send IPFS hash to etheruem contract 
+      //return the transaction hash from the ethereum contract
+
+      storehash.methods.sendHash(this.state.ipfsHash).send(
+      {
+        from: accounts[0] 
+      }, (error, transactionHash) => 
+      {
+        this.setState({transactionHash});
+      }); //storehash 
+    }) //await ipfs.add
+
+    await storehash.methods.addToUserInfoMap(accounts[0].toString(), this.state.ipfsHash).send(
+      {
+        from: accounts[0]
+      }, (error, result) => {
+        if (error) {
+          console.log(error);
+        }
+        else {
+          console.log('Adding to map');
+          //save document to IPFS,return its hash#, and set hash# to state
+          //https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/FILES.md#add 
+          ipfs.add(this.state.buffer, (err, ipfsHash) => {
+            console.warn(err,ipfsHash);
+            //setState by setting ipfsHash to ipfsHash[0].hash 
+            this.setState({ ipfsHash:ipfsHash[0].hash });
+            console.log(ipfsHash);
+            // call Ethereum contract method "sendHash" and send IPFS hash to etheruem contract 
+            //return the transaction hash from the ethereum contract
+
+            storehash.methods.sendHash(this.state.ipfsHash).send({
+              from: accounts[0] 
+            }, (error, transactionHash) => {
+              this.setState({transactionHash});
+              }); //storehash 
+          }) //await ipfs.add
+        }
+      });
+  } //addUserToMap
+
   renderWisps() {
     var elements = [];
     for (var i = 0; i < 10; i++)
     {
       elements.push(
-      <div>
+      <div key={i}>
         <div>
           <div className="wispPost">
             <header> 
@@ -177,6 +224,7 @@ class App extends Component
       <Modal
         isOpen={this.state.showModal}
         contentLabel="PostWispModal"
+        ariaHideApp={false}
       >
       <Container>
         <h3 className="App-header">Post Wisp</h3>
