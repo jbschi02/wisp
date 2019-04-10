@@ -35,6 +35,7 @@ class App extends Component
   }
   
   handleCloseModal () {
+    this.setState({postContent:''})
     this.setState({ showModal: false });
   }
 
@@ -52,7 +53,7 @@ class App extends Component
     // Create JSON string
     const obj = 
     {
-      "owner":"newOwner", 
+      "address": accounts[0], 
       "content": this.state.postContent,
       "timestamp": Date.now()
     };
@@ -79,10 +80,40 @@ class App extends Component
         from: accounts[0] 
       }, (error, transactionHash) => 
       {
-        console.log(transactionHash);
         this.setState({transactionHash});
       }); //storehash 
     }) //await ipfs.add
+
+    console.log(accounts[0].toString());
+    await storehash.methods.addToUserInfoMap(accounts[0].toString(), this.state.ipfsHash).send(
+      {
+        from: accounts[0]
+      }, (error, result) => {
+        if (error) {
+          console.log(error);
+        }
+        else {
+          storehash.methods.getUserInfoIpfsHash(accounts[0].toString()).call((error, result) => {
+            if (error) {
+              console.log(error);
+            }
+            else {
+              console.log('Result: ', result);
+            }
+          });
+        }
+      });
+
+
+    storehash.methods.returnX().call((error, result) => {
+    if (error) {
+      console.log('Error: ', error);
+      }
+      console.log('Result: ', result);
+    });
+
+
+
     this.handleCloseModal(); 
   }; //onSubmit
 
@@ -108,11 +139,18 @@ class App extends Component
             </div>
             </header>
             <div className="wispPostBody">
-              <div>
+              <div className="wispPostContent">
               Sample Wisp
               </div>
-              <div className="wispPostDate">
-              4/8/2019
+              <div>
+                <div>
+                  <button onClick={this.handleOpenModal} className="replyButton">
+                  Reply
+                  </button>
+                </div>
+                <div className="wispPostDate">
+                4/8/2019
+                </div>
               </div>
             </div>
           </div>

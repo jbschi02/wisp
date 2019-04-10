@@ -61,6 +61,18 @@
   right: 32px;
 }
 
+.replyButton {
+  background: #282c34;
+  border-radius: 8px;
+  color:#ffffff;
+  height: 24px;
+  width: 50px;
+}
+
+.wispPostContent {
+  margin: 4px;
+}
+
 .postWispButtonModal {
   background: #282c34;
   border-radius: 8px;
