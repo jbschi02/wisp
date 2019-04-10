@@ -3,7 +3,7 @@ import web3 from './web3';
 //access our local copy to contract deployed on rinkeby testnet
 
 
-const address = '0x4cfe9aa1b4d75858d958ea9c520f51e4fb73d2ce';
+const address = '0xde1fa252484ebf58c09e1d995e17cbe536b9b63b';
 
 const abi = [
 	{
@@ -25,36 +25,17 @@ const abi = [
 		"type": "function"
 	},
 	{
-		"constant": true,
+		"constant": false,
 		"inputs": [
-			{
-				"name": "userAddress",
-				"type": "string"
-			}
-		],
-		"name": "getUserInfoIpfsHash",
-		"outputs": [
-			{
-				"name": "hash",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "returnX",
-		"outputs": [
 			{
 				"name": "x",
 				"type": "string"
 			}
 		],
+		"name": "sendHash",
+		"outputs": [],
 		"payable": false,
-		"stateMutability": "pure",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -72,17 +53,22 @@ const abi = [
 		"type": "function"
 	},
 	{
-		"constant": false,
+		"constant": true,
 		"inputs": [
 			{
-				"name": "x",
+				"name": "userAddress",
 				"type": "string"
 			}
 		],
-		"name": "sendHash",
-		"outputs": [],
+		"name": "getUserInfoIpfsHash",
+		"outputs": [
+			{
+				"name": "hash",
+				"type": "string"
+			}
+		],
 		"payable": false,
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	}
 ]
