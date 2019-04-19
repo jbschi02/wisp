@@ -1,8 +1,5 @@
 import web3 from './web3';
 
-//access our local copy to contract deployed on rinkeby testnet
-
-
 const address = '0xde1fa252484ebf58c09e1d995e17cbe536b9b63b';
 
 const abi = [

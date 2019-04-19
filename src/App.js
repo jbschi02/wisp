@@ -146,7 +146,41 @@ class App extends Component
     }) //await ipfs.add
   }
 
-  // THis is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
+  async testIpfs() {
+  	const accounts = await web3.eth.getAccounts();
+  	ipfs.files.mkdir('/my/test/directory', (err, ipfsHash) => {
+  		console.warn(err, ipfsHash);
+
+  		this.setState({ipfs:ipfsHash[0].hash });
+  		console.log(ipfsHash);
+
+  		storehash.methods.sendHash(this.state.ipfsHash).send({
+  			from: accounts[0]
+  		}, (error, transactionHash) => {
+  			this.setState({transactionHash});
+  		});
+  	})
+  }
+
+  async testIpfs2() {
+  	ipfs.files.mkdir('/directory', (err) => {
+  	if (err) {
+    	console.error(err)
+  	}
+	})
+  }
+
+
+  async testIpfs3() {
+  	ipfs.files.stat('/directory', (err, stats) => {
+  	if (err) {
+    	console.error(err)
+  	}
+  	console.log(stats);
+	})
+  }
+
+  // This is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
   renderWisps() {
     var elements = [];
     for (var i = 0; i < 10; i++)
@@ -166,7 +200,7 @@ class App extends Component
               </div>
               <div>
                 <div>
-                  <button onClick={this.handleOpenModal} className="replyButton">
+                  <button onClick={this.testIpfs3} className="replyButton">
                   Reply
                   </button>
                 </div>
