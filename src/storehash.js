@@ -1,34 +1,48 @@
 import web3 from './web3';
 
-const address = '0xa4b00d82c71e5854294249c7181e03edb8934ae1';
+const address = '0xd23f523b1fbf317b91ca37fc849e9dab3675cd34';
 
 const abi = [
 	{
-		"constant": true,
+		"constant": false,
 		"inputs": [
 			{
-				"name": "",
-				"type": "address"
+				"name": "_userAlias",
+				"type": "string"
 			}
 		],
-		"name": "userAddressToFeedMapping",
-		"outputs": [
+		"name": "addOrUpdateFeed",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "fallback"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
 			{
-				"name": "ipfsHash",
+				"indexed": false,
+				"name": "_userAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "_userAlias",
 				"type": "string"
 			},
 			{
-				"name": "userAlias",
-				"type": "string"
-			},
-			{
-				"name": "dateLastModified",
+				"indexed": false,
+				"name": "_dateLastModified",
 				"type": "uint256"
 			}
 		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
+		"name": "FeedUpdatedOrAdded",
+		"type": "event"
 	},
 	{
 		"constant": true,
@@ -40,10 +54,6 @@ const abi = [
 		],
 		"name": "getFeed",
 		"outputs": [
-			{
-				"name": "_ipfsHash",
-				"type": "string"
-			},
 			{
 				"name": "_userAlias",
 				"type": "string"
@@ -58,114 +68,26 @@ const abi = [
 		"type": "function"
 	},
 	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_ipfsHash",
-				"type": "string"
-			},
-			{
-				"name": "_userAlias",
-				"type": "string"
-			}
-		],
-		"name": "addUserToFeedMap",
-		"outputs": [
-			{
-				"name": "_success",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "userAddress",
-				"type": "string"
-			},
-			{
-				"name": "userInfoIpfsHash",
-				"type": "string"
-			}
-		],
-		"name": "addToUserInfoMap",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_ipfsHash",
-				"type": "string"
-			},
-			{
-				"name": "_userAlias",
-				"type": "string"
-			}
-		],
-		"name": "updateFeed",
-		"outputs": [
-			{
-				"name": "_success",
-				"type": "bool"
-			}
-		],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"constant": true,
 		"inputs": [
 			{
-				"name": "userAddress",
-				"type": "string"
+				"name": "",
+				"type": "address"
 			}
 		],
-		"name": "getUserInfoIpfsHash",
+		"name": "userAddressToFeedMapping",
 		"outputs": [
 			{
-				"name": "hash",
+				"name": "userAlias",
 				"type": "string"
+			},
+			{
+				"name": "dateLastModified",
+				"type": "uint256"
 			}
 		],
 		"payable": false,
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getHash",
-		"outputs": [
-			{
-				"name": "x",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "x",
-				"type": "string"
-			}
-		],
-		"name": "sendHash",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]
