@@ -40,25 +40,30 @@ class App extends Component
     this.setState({ showModal: false });
   }
 
-  async addNewPostToIpfs(account, content, timestamp) {
+  async addNewPostToIpfs(account, content, timestamp, userDirectoryHash) {
   	const obj = {
   		"address": account,
   		"content": content,
   		"timestamp": timestamp
   	};
+  	console.log(userDirectoryHash);
+  	console.log(this.state.userDirectoryHash);
+  	const path = userDirectoryHash.toString() + "/messages/newPost.txt";
+  	console.log(path);
     const stringToWrite = JSON.stringify(obj, null, '  ')
         // Add a space after every key, before the `:`:
         .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
   	const file = [
   	{
-  		path: '/directory/hello_world.txt',
+  		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	console.log(await ipfs.add(file));
+  	console.log (await ipfs.add(file));
   }
 
   async addUserToFeedMap(ipfsHash, userAlias, account) {
   	console.log(ipfsHash);
+  	
   	await storehash.methods.addUserToFeedMap(ipfsHash, userAlias).send({
   		from: account
   	}, (error, transactionHash) => {
@@ -72,21 +77,22 @@ class App extends Component
   }
 
   async makeNewUserDirectory(account, alias) {
-  	const accountString = "/" + account.toString() + "2";
-  	console.log(accountString)
-  	ipfs.files.mkdir(accountString, (err) => {
-  		if (err) {
-    		console.error(err)
-  		}
-  		console.log("make dir");
-	})
-	ipfs.files.stat(accountString, (err, stats) => {
-		if (err) {
-			console.log(err);
-		}
-		console.log(stats.hash);
-		this.addUserToFeedMap(stats.hash, alias, account);
-	})
+  	const path = "/" + account.toString() + "/accountdetails.txt";
+  	const obj = {
+  		"address": account,
+  		"alias": alias,
+  	};
+    const stringToWrite = JSON.stringify(obj, null, '  ')
+        // Add a space after every key, before the `:`:
+        .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+  	const file = [
+  	{
+  		path: path,
+  		content: await Buffer.from(stringToWrite)
+  	}];
+  	const results = await ipfs.add(file);
+  	console.log("....")
+  	this.addUserToFeedMap(results[1].hash, alias, account);
   }
 
   // This method is called whenever the user attempts to post a new wisp.
@@ -98,26 +104,22 @@ class App extends Component
   	// User is posting a new wisp
 
   	// 1) Check to see if the user currently is mapped to a directory
-  	await storehash.methods.getFeed(accounts[0]).call( async (error, result) => {
-  		if (error) {
-  			console.log(error);
-  		}
-       	// 2) If not, update the map
-  		else if (result._ipfsHash === '') {
-        	var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
-        	if (alias == null || alias === "") {
-          		alias = accounts[0].toString();
-        	}
-        	this.makeNewUserDirectory(accounts[0], alias);
-  		}
-  		else {
-  			this.userDirectoryHash = result._ipfsHash;
-  		}
+  	const results = await storehash.methods.getFeed(accounts[0]).call();
+  	if (results._ipfsHash === "") {
+  		var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
+        if (alias == null || alias === "") {
+         	alias = accounts[0].toString();
+        }
+        await this.makeNewUserDirectory(accounts[0], alias);
+  	}
+  	else {
+  		this.userDirectoryHash = results._ipfsHash;
   		console.log(this.userDirectoryHash);
-  	})
+  	}
   	// 3) Get user info from map
   	// 4) Add file to IPFS
-  	//this.addNewPostToIpfs(accounts[0], this.state.postContent, Date.now());
+  	console.log(this.userDirectoryHash);
+  	await this.addNewPostToIpfs(accounts[0], this.state.postContent, Date.now(), this.state.userDirectoryHash);
   	// 5) Add file to existing user directory and update directory hash
   	// 6) Notify listeners that a feed has been updated
 
