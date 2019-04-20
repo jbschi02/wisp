@@ -40,16 +40,19 @@ class App extends Component
     this.setState({ showModal: false });
   }
 
-  async addNewPostToIpfs(account, content, timestamp, userDirectoryHash) {
+  // This method can be called whenever a new post is made.
+  //	Takes in the user's account hash and the content of the post,
+  //	then posts to the user's messages directory.
+  async addNewPostToIpfs(account, content) {
   	const obj = {
   		"address": account,
   		"content": content,
-  		"timestamp": timestamp
+  		"timestamp": Date.now()
   	};
-  	console.log(userDirectoryHash);
-  	console.log(this.state.userDirectoryHash);
-  	const path = userDirectoryHash.toString() + "/messages/newPost.txt";
-  	console.log(path);
+  	// TODO: Will we need a unique file name for each post? Or will ipfs.files.write()
+  	//	work better here?
+  	const path = account.toString() + "/messages/newPost.txt";
+  	console.log("Adding new post to " + path);
     const stringToWrite = JSON.stringify(obj, null, '  ')
         // Add a space after every key, before the `:`:
         .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
@@ -58,12 +61,18 @@ class App extends Component
   		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	console.log (await ipfs.add(file));
+  	await ipfs.add(file);
   }
 
+  // This method is called when a user is posting to Wisp for the first time. 
+  //	Calls the addUserToFeedMap method in the FeedRegister contract, maps
+  //	the user's metamask account hash to a directory containing their information,
+  //	posts, subscriptions, etc. 
   async addUserToFeedMap(ipfsHash, userAlias, account) {
-  	console.log(ipfsHash);
-  	
+  	// TODO: We really need to wait for the ethereum transaction to be mined before continuing
+  	//	after this method. Quick Google doesn't give me any answers on how to do this.
+  	//	For the time being, wait for the transaction to be confirmed by Metamask before making a 
+  	//	second post.
   	await storehash.methods.addUserToFeedMap(ipfsHash, userAlias).send({
   		from: account
   	}, (error, transactionHash) => {
@@ -76,6 +85,10 @@ class App extends Component
   	})
   }
 
+  // This method is called when a user is posting to Wisp for the first time.
+  //	Makes a new directory containing the new user's information, posts,
+  //	subscriptions, etc. Then calls addUserToFeedMap to map the user on 
+  //	the blockchain.
   async makeNewUserDirectory(account, alias) {
   	const path = "/" + account.toString() + "/accountdetails.txt";
   	const obj = {
@@ -114,12 +127,10 @@ class App extends Component
   	}
   	else {
   		this.userDirectoryHash = results._ipfsHash;
-  		console.log(this.userDirectoryHash);
   	}
   	// 3) Get user info from map
   	// 4) Add file to IPFS
-  	console.log(this.userDirectoryHash);
-  	await this.addNewPostToIpfs(accounts[0], this.state.postContent, Date.now(), this.state.userDirectoryHash);
+  	await this.addNewPostToIpfs(accounts[0], this.state.postContent);
   	// 5) Add file to existing user directory and update directory hash
   	// 6) Notify listeners that a feed has been updated
 
@@ -133,35 +144,6 @@ class App extends Component
     {
       [field]: e.target.value
     });
-  }
-
-  async testIpfs2() {
-  	var dirName = "/testdirectoryxyz";
-  	ipfs.files.mkdir(dirName, (err, stats) => {
-  		if (err) {
-  			console.error(err);
-  		}
-  		else console.log("success");
-  	})
-  }
-
-  async testIpfs3() {
-  	var dirName = "/testdirectoryxyz";
-  	ipfs.files.stat(dirName, (err, stats) => {
-  	if (err) {
-    	console.error(err);
-  	}
-  	console.log(stats);
-	})
-  }
-
-  async testIpfs4() {
-  	const file = [
-  	{
-  		path: '/directory/hello_world.txt',
-  		content: await Buffer.from("hello world")
-  	}];
-  	console.log(await ipfs.add(file));
   }
 
   // This is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
@@ -184,7 +166,7 @@ class App extends Component
               </div>
               <div>
                 <div>
-                  <button onClick={this.testIpfs3} className="replyButton">
+                  <button onClick={this.handleOpenModal} className="replyButton">
                   Reply
                   </button>
                 </div>
