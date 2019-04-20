@@ -23,7 +23,8 @@ class App extends Component
       gasUsed:'',
       txReceipt: '',
       postContent: '',
-      showModal: false
+      showModal: false,
+      userDirectoryHash: ''
     }
 
     this.handleOpenModal = this.handleOpenModal.bind(this);
@@ -39,47 +40,99 @@ class App extends Component
     this.setState({ showModal: false });
   }
 
+  // This method can be called whenever a new post is made.
+  //	Takes in the user's account hash and the content of the post,
+  //	then posts to the user's messages directory.
+  async addNewPostToIpfs(account, content) {
+  	const obj = {
+  		"address": account,
+  		"content": content,
+  		"timestamp": Date.now()
+  	};
+  	// TODO: Will we need a unique file name for each post? Or will ipfs.files.write()
+  	//	work better here?
+  	const path = account.toString() + "/messages/newPost.txt";
+  	console.log("Adding new post to " + path);
+    const stringToWrite = JSON.stringify(obj, null, '  ')
+        // Add a space after every key, before the `:`:
+        .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+  	const file = [
+  	{
+  		path: path,
+  		content: await Buffer.from(stringToWrite)
+  	}];
+  	await ipfs.add(file);
+  }
+
+  // This method is called when a user is posting to Wisp for the first time. 
+  //	Calls the addUserToFeedMap method in the FeedRegister contract, maps
+  //	the user's metamask account hash to a directory containing their information,
+  //	posts, subscriptions, etc. 
+  async addUserToFeedMap(ipfsHash, userAlias, account) {
+  	// TODO: We really need to wait for the ethereum transaction to be mined before continuing
+  	//	after this method. Quick Google doesn't give me any answers on how to do this.
+  	//	For the time being, wait for the transaction to be confirmed by Metamask before making a 
+  	//	second post.
+  	await storehash.methods.addUserToFeedMap(ipfsHash, userAlias).send({
+  		from: account
+  	}, (error, transactionHash) => {
+  		if (error) {
+  			console.log(error);
+  		}
+  		else {
+  			console.log("Adding " + userAlias + " to feed map");
+  		}
+  	})
+  }
+
+  // This method is called when a user is posting to Wisp for the first time.
+  //	Makes a new directory containing the new user's information, posts,
+  //	subscriptions, etc. Then calls addUserToFeedMap to map the user on 
+  //	the blockchain.
+  async makeNewUserDirectory(account, alias) {
+  	const path = "/" + account.toString() + "/accountdetails.txt";
+  	const obj = {
+  		"address": account,
+  		"alias": alias,
+  	};
+    const stringToWrite = JSON.stringify(obj, null, '  ')
+        // Add a space after every key, before the `:`:
+        .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+  	const file = [
+  	{
+  		path: path,
+  		content: await Buffer.from(stringToWrite)
+  	}];
+  	const results = await ipfs.add(file);
+  	console.log("....")
+  	this.addUserToFeedMap(results[1].hash, alias, account);
+  }
+
   // This method is called whenever the user attempts to post a new wisp.
   onSubmit = async (event) => 
   {
-    event.preventDefault();
+  	event.preventDefault();
+  	const accounts = await web3.eth.getAccounts();
 
-    //bring in user's metamask account address
-    const accounts = await web3.eth.getAccounts();
-    console.log('Sending from Metamask account: ' + accounts[0]);
+  	// User is posting a new wisp
 
-    //obtain contract address from storehash.js
-    const ethAddress= await storehash.options.address;
-    this.setState({ethAddress});
-
-    // Create JSON string for new post
-    const obj = 
-    {
-      "address": accounts[0], 
-      "content": this.state.postContent,
-      "timestamp": Date.now()
-    };
-    // post newly created JSON obj to IPFS
-    await this.addJsonToIpfs(obj, accounts);
-
-    // This code section checks to see if the owner of this ethereum address has posted to wisp before. 
-    //    If so, do nothing. If it is their first post, create a new user info page on IPFS.
-    storehash.methods.getUserInfoIpfsHash(accounts[0].toString()).call((error, result) => {
-      if (error) {
-        console.log(error);
-      }
-      else if (result === '') { // user has not posted before, create new user info page on IPFS.
-        //add user to map
-        var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
+  	// 1) Check to see if the user currently is mapped to a directory
+  	const results = await storehash.methods.getFeed(accounts[0]).call();
+  	if (results._ipfsHash === "") {
+  		var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
         if (alias == null || alias === "") {
-          alias = accounts[0].toString();
+         	alias = accounts[0].toString();
         }
-        this.addUserToMap(accounts, alias);
-      }
-      else {
-        console.log('Already in map: ', result);
-      }
-    });
+        await this.makeNewUserDirectory(accounts[0], alias);
+  	}
+  	else {
+  		this.userDirectoryHash = results._ipfsHash;
+  	}
+  	// 3) Get user info from map
+  	// 4) Add file to IPFS
+  	await this.addNewPostToIpfs(accounts[0], this.state.postContent);
+  	// 5) Add file to existing user directory and update directory hash
+  	// 6) Notify listeners that a feed has been updated
 
     this.handleCloseModal(); 
   }; //onSubmit
@@ -93,60 +146,7 @@ class App extends Component
     });
   }
 
-  // This method is called whenever a new user is making a post to Wisp. The user's ethereum address is first added to a map in Contract.sol,
-  //    mapping their ethereum address to a user info page on IPFS. This user info page is then created and posted.
-  async addUserToMap(accounts, alias)
-  {
-    await storehash.methods.addToUserInfoMap(accounts[0].toString(), this.state.ipfsHash).send(
-      {
-        from: accounts[0]
-      }, (error, transactionHash) => {
-        if (error) {
-          console.log(error);
-        }
-        else {
-          this.setState({transactionHash});
-          console.log('Adding to map');
-
-          // Create JSON string
-          const obj = 
-          {
-            "address": accounts[0], 
-            "alias": alias,
-            "postsPage": 'f7hewq7fh32rh93'
-          };
-
-          this.addJsonToIpfs(obj, accounts);
-        } // end else
-      }); // end add user to map
-  } //addUserToMap
-
-  // This method takes in a JSON obj and a list of ethereum accounts, then posts the obj to IPFS using the first account in the accounts array.
-  async addJsonToIpfs(obj, accounts) {
-    const stringToWrite = JSON.stringify(obj, null, '  ')
-        // Add a space after every key, before the `:`:
-        .replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
-    console.log(stringToWrite);
-    const buffer = await Buffer.from(stringToWrite);
-    this.setState({buffer});  
-
-    ipfs.add(this.state.buffer, (err, ipfsHash) => {
-      console.warn(err,ipfsHash);
-      //setState by setting ipfsHash to ipfsHash[0].hash 
-      this.setState({ ipfsHash:ipfsHash[0].hash });
-      console.log(ipfsHash);
-
-      // call Ethereum contract method "sendHash" and send IPFS hash to etheruem contract 
-      //return the transaction hash from the ethereum contract
-      storehash.methods.sendHash(this.state.ipfsHash).send({
-        from: accounts[0] 
-      }, (error, transactionHash) => {
-        this.setState({transactionHash});
-        }); //storehash 
-    }) //await ipfs.add
-  }
-
-  // THis is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
+  // This is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
   renderWisps() {
     var elements = [];
     for (var i = 0; i < 10; i++)

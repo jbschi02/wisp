@@ -1,11 +1,85 @@
 import web3 from './web3';
 
-//access our local copy to contract deployed on rinkeby testnet
-
-
-const address = '0xde1fa252484ebf58c09e1d995e17cbe536b9b63b';
+const address = '0xa4b00d82c71e5854294249c7181e03edb8934ae1';
 
 const abi = [
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "userAddressToFeedMapping",
+		"outputs": [
+			{
+				"name": "ipfsHash",
+				"type": "string"
+			},
+			{
+				"name": "userAlias",
+				"type": "string"
+			},
+			{
+				"name": "dateLastModified",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "getFeed",
+		"outputs": [
+			{
+				"name": "_ipfsHash",
+				"type": "string"
+			},
+			{
+				"name": "_userAlias",
+				"type": "string"
+			},
+			{
+				"name": "_dateLastModified",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_ipfsHash",
+				"type": "string"
+			},
+			{
+				"name": "_userAlias",
+				"type": "string"
+			}
+		],
+		"name": "addUserToFeedMap",
+		"outputs": [
+			{
+				"name": "_success",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
 	{
 		"constant": false,
 		"inputs": [
@@ -28,28 +102,23 @@ const abi = [
 		"constant": false,
 		"inputs": [
 			{
-				"name": "x",
+				"name": "_ipfsHash",
+				"type": "string"
+			},
+			{
+				"name": "_userAlias",
 				"type": "string"
 			}
 		],
-		"name": "sendHash",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "getHash",
+		"name": "updateFeed",
 		"outputs": [
 			{
-				"name": "x",
-				"type": "string"
+				"name": "_success",
+				"type": "bool"
 			}
 		],
 		"payable": false,
-		"stateMutability": "view",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -69,6 +138,34 @@ const abi = [
 		],
 		"payable": false,
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getHash",
+		"outputs": [
+			{
+				"name": "x",
+				"type": "string"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "x",
+				"type": "string"
+			}
+		],
+		"name": "sendHash",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]
