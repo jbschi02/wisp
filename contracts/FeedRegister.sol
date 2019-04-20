@@ -3,7 +3,6 @@ pragma solidity ^0.4.24;
 contract ImageRegister {
 
     struct Feed {
-        string ipfsHash;
         string userAlias;
         uint256 dateLastModified;
     }
@@ -11,8 +10,7 @@ contract ImageRegister {
     mapping (address => Feed) public userAddressToFeedMapping;
 
     event FeedUpdatedOrAdded(
-        address _userAddress, 
-        string _ipfsHash, 
+        address _userAddress,
         string _userAlias,
         uint256 _dateLastModified
     );
@@ -20,16 +18,12 @@ contract ImageRegister {
     function() public {}
 
     function addOrUpdateFeed(
-        string _ipfsHash, 
         string _userAlias
     ){
-            
-        require(bytes(_ipfsHash).length == 46);
         require(bytes(_userAlias).length > 0 && bytes(_userAlias).length <= 256);
 
         uint256 dateLastModified = now;
         Feed memory feed = Feed(
-            _ipfsHash,
             _userAlias,
             dateLastModified
         );
@@ -38,7 +32,6 @@ contract ImageRegister {
 
         emit FeedUpdatedOrAdded(
             msg.sender,
-            _ipfsHash,
             _userAlias,
             dateLastModified
         );
@@ -46,7 +39,6 @@ contract ImageRegister {
 
     function getFeed(address _userAddress) 
     returns (
-        string _ipfsHash, 
         string _userAlias,
         uint256 _dateLastModified
     ) {
@@ -56,7 +48,6 @@ contract ImageRegister {
         Feed storage feed = userAddressToFeedMapping[_userAddress];
         
         return (
-            feed.ipfsHash,
             feed.userAlias,
             feed.dateLastModified
         );

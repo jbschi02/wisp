@@ -8,6 +8,8 @@ import {Container} from 'react-bootstrap';
 import {Button} from 'react-bootstrap';
 import {Form} from 'react-bootstrap';
 
+const uuidv1 = require('uuid/v1');
+
 class App extends Component 
 {
   constructor()
@@ -44,6 +46,8 @@ class App extends Component
   //	Takes in the user's account hash and the content of the post,
   //	then posts to the user's messages directory.
   async addNewPostToIpfs(account, content) {
+    console.log("Adding new post:");
+
   	const obj = {
   		"address": account,
   		"content": content,
@@ -51,7 +55,8 @@ class App extends Component
   	};
   	// TODO: Will we need a unique file name for each post? Or will ipfs.files.write()
   	//	work better here?
-  	const path = account.toString() + "/messages/newPost.txt";
+    const id = uuidv1();
+  	const path = '/' + account.toString() + '/messages/message' + id.toString() + '.txt';
   	console.log("Adding new post to " + path);
     const stringToWrite = JSON.stringify(obj, null, '  ')
         // Add a space after every key, before the `:`:
@@ -61,19 +66,21 @@ class App extends Component
   		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	await ipfs.add(file);
-  }
+  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});  }
 
   // This method is called when a user is posting to Wisp for the first time. 
   //	Calls the addUserToFeedMap method in the FeedRegister contract, maps
   //	the user's metamask account hash to a directory containing their information,
   //	posts, subscriptions, etc. 
-  async addUserToFeedMap(ipfsHash, userAlias, account) {
+  async addUserToFeedMap(userAlias, account) {
+    console.log("Adding user to feed map:");
   	// TODO: We really need to wait for the ethereum transaction to be mined before continuing
   	//	after this method. Quick Google doesn't give me any answers on how to do this.
   	//	For the time being, wait for the transaction to be confirmed by Metamask before making a 
   	//	second post.
-  	await storehash.methods.addUserToFeedMap(ipfsHash, userAlias).send({
+    console.log("send from:");
+    console.log(account);
+  	await storehash.methods.addOrUpdateFeed(userAlias).send({
   		from: account
   	}, (error, transactionHash) => {
   		if (error) {
@@ -90,6 +97,8 @@ class App extends Component
   //	subscriptions, etc. Then calls addUserToFeedMap to map the user on 
   //	the blockchain.
   async makeNewUserDirectory(account, alias) {
+    console.log("Making new user directory.")
+
   	const path = "/" + account.toString() + "/accountdetails.txt";
   	const obj = {
   		"address": account,
@@ -103,9 +112,9 @@ class App extends Component
   		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	const results = await ipfs.add(file);
-  	console.log("....")
-  	this.addUserToFeedMap(results[1].hash, alias, account);
+    console.log(file);
+  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});
+  	this.addUserToFeedMap(alias, account);
   }
 
   // This method is called whenever the user attempts to post a new wisp.
@@ -115,18 +124,20 @@ class App extends Component
   	const accounts = await web3.eth.getAccounts();
 
   	// User is posting a new wisp
-
+    console.log("calling getFeed");
+    console.log(accounts[0]);
   	// 1) Check to see if the user currently is mapped to a directory
   	const results = await storehash.methods.getFeed(accounts[0]).call();
-  	if (results._ipfsHash === "") {
+
+    console.log("Get feeds results:");
+    console.log(results._userAlias);
+  	if (!results._userAlias || results._userAlias === "") {
+      console.log("Making new user directory...");
   		var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
         if (alias == null || alias === "") {
          	alias = accounts[0].toString();
         }
         await this.makeNewUserDirectory(accounts[0], alias);
-  	}
-  	else {
-  		this.userDirectoryHash = results._ipfsHash;
   	}
   	// 3) Get user info from map
   	// 4) Add file to IPFS
