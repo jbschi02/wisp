@@ -9,12 +9,13 @@ import {Button} from 'react-bootstrap';
 import {Form} from 'react-bootstrap';
 
 const uuidv1 = require('uuid/v1');
+const moment = require('moment');
 
 class App extends Component 
 {
-  constructor()
+  constructor(props)
   {
-    super();
+    super(props);
     this.state = 
     {
       ipfsHash:'',
@@ -22,13 +23,15 @@ class App extends Component
       ethAddress:'',
       blockNumber:'',
       transactionHash:'',
-      gasUsed:'',
+      gasUsed:'', 
       txReceipt: '',
       postContent: '',
       showModal: false,
-      userDirectoryHash: ''
+      userDirectoryHash: '',
+      newsFeedPosts: [],
     }
 
+    this.onSubmit = this.handleSubmit.bind(this);
     this.handleOpenModal = this.handleOpenModal.bind(this);
     this.handleCloseModal = this.handleCloseModal.bind(this);
   }
@@ -45,11 +48,11 @@ class App extends Component
   // This method can be called whenever a new post is made.
   //	Takes in the user's account hash and the content of the post,
   //	then posts to the user's messages directory.
-  async addNewPostToIpfs(account, content) {
+  async addNewPostToIpfs(account, content, alias) {
     console.log("Adding new post:");
 
   	const obj = {
-  		"address": account,
+  		"alias": alias,
   		"content": content,
   		"timestamp": Date.now()
   	};
@@ -118,10 +121,12 @@ class App extends Component
   }
 
   // This method is called whenever the user attempts to post a new wisp.
-  onSubmit = async (event) => 
+  handleSubmit = async (event) => 
   {
   	event.preventDefault();
   	const accounts = await web3.eth.getAccounts();
+
+    //this.props.onSubmit
 
   	// User is posting a new wisp
     console.log("calling getFeed");
@@ -131,9 +136,10 @@ class App extends Component
 
     console.log("Get feeds results:");
     console.log(results._userAlias);
-  	if (!results._userAlias || results._userAlias === "") {
+    var alias = results._userAlias;
+  	if (!alias || alias === "") {
       console.log("Making new user directory...");
-  		var alias = prompt("This is your first time posting a wisp. Please enter an alias:");
+  		alias = prompt("This is your first time posting a wisp. Please enter an alias:");
         if (alias == null || alias === "") {
          	alias = accounts[0].toString();
         }
@@ -141,10 +147,24 @@ class App extends Component
   	}
   	// 3) Get user info from map
   	// 4) Add file to IPFS
-  	await this.addNewPostToIpfs(accounts[0], this.state.postContent);
+  	await this.addNewPostToIpfs(accounts[0], this.state.postContent, alias);
+    this.getPosts(accounts[0]);
+    // this.state.newsFeedPosts = [];
+    // const path = '/' + accounts[0].toString() + '/messages';
+    // ipfs.files.ls(path, { long : true }, (err, files) => {
+    //   files.forEach((file) => {
+    //     ipfs.files.read(path + '/' + file.name, (err, buf) => {
+    //       var obj = JSON.parse(buf.toString('utf8'));
+    //       this.state.newsFeedPosts.push(obj);
+    //       this.state.newsFeedPosts.sort((a, b) => {
+    //         return new Date(b.timestamp) - new Date(a.timestamp); 
+    //       })
+    //     })
+    //   })
+    // })
   	// 5) Add file to existing user directory and update directory hash
   	// 6) Notify listeners that a feed has been updated
-
+    this.renderWisps();
     this.handleCloseModal(); 
   }; //onSubmit
 
@@ -157,23 +177,44 @@ class App extends Component
     });
   }
 
+  getPosts(account) {
+    const path = '/' + account.toString() + '/messages';
+    this.setState({newsFeedPosts : []});
+    ipfs.files.ls(path, { long : true }, (err, files) => {
+      files.forEach((file) => {
+        ipfs.files.read(path + '/' + file.name, (err, buf) => {
+          var obj = JSON.parse(buf.toString('utf8'));
+          this.setState({
+            newsFeedPosts: this.state.newsFeedPosts.concat([obj])
+          });
+          //this.state.newsFeedPosts.push(obj);
+          this.state.newsFeedPosts.sort((a, b) => {
+            return new Date(b.timestamp) - new Date(a.timestamp); 
+          })
+        })
+      })
+    })
+  }
+
   // This is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
   renderWisps() {
     var elements = [];
-    for (var i = 0; i < 10; i++)
+    for (var i = 0; i < this.state.newsFeedPosts.length; i++)
     {
+      var obj = this.state.newsFeedPosts[i];
+      var time = moment(obj.timestamp).format("h:mm MM/DD/YYYY");
       elements.push(
       <div key={i}>
         <div>
           <div className="wispPost">
             <header> 
             <div className="wispPostOwner">
-            John Schieman
+            {obj.alias}
             </div>
             </header>
             <div className="wispPostBody">
               <div className="wispPostContent">
-              Sample Wisp
+              {obj.content}
               </div>
               <div>
                 <div>
@@ -182,7 +223,7 @@ class App extends Component
                   </button>
                 </div>
                 <div className="wispPostDate">
-                4/8/2019
+                {time}
                 </div>
               </div>
             </div>
@@ -192,6 +233,12 @@ class App extends Component
       )
     }
     return elements;
+  }
+
+  async componentWillMount() {
+    this.handleCloseModal();
+    const accounts = await web3.eth.getAccounts();
+    this.getPosts(accounts[0]);
   }
 
   // This method renders the main user interface for Wisp.

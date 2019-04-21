@@ -1,8 +1,54 @@
 import web3 from './web3';
 
-const address = '0xd23f523b1fbf317b91ca37fc849e9dab3675cd34';
+const address = '0xd3be4adab9733a380cbfd7d52be39e6374832e3c';
 
 const abi = [
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "userAddressToFeedMapping",
+		"outputs": [
+			{
+				"name": "userAlias",
+				"type": "string"
+			},
+			{
+				"name": "dateLastModified",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "getFeed",
+		"outputs": [
+			{
+				"name": "_userAlias",
+				"type": "string"
+			},
+			{
+				"name": "_dateLastModified",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
 	{
 		"constant": false,
 		"inputs": [
@@ -43,52 +89,6 @@ const abi = [
 		],
 		"name": "FeedUpdatedOrAdded",
 		"type": "event"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_userAddress",
-				"type": "address"
-			}
-		],
-		"name": "getFeed",
-		"outputs": [
-			{
-				"name": "_userAlias",
-				"type": "string"
-			},
-			{
-				"name": "_dateLastModified",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "userAddressToFeedMapping",
-		"outputs": [
-			{
-				"name": "userAlias",
-				"type": "string"
-			},
-			{
-				"name": "dateLastModified",
-				"type": "uint256"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
 	}
 ]
 export default new web3.eth.Contract(abi, address);
