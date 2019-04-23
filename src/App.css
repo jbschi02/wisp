@@ -61,12 +61,12 @@
   right: 32px;
 }
 
-.replyButton {
+.userActionButton {
   background: #282c34;
   border-radius: 8px;
   color:#ffffff;
   height: 24px;
-  width: 50px;
+  width: 60px;
 }
 
 .wispPostContent {
