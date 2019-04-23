@@ -7,9 +7,9 @@ import storehash from './storehash';
 import {Container} from 'react-bootstrap';
 import {Button} from 'react-bootstrap';
 import {Form} from 'react-bootstrap';
+import Post from './Post.js';
 
 const uuidv1 = require('uuid/v1');
-const moment = require('moment');
 
 class App extends Component 
 {
@@ -18,20 +18,14 @@ class App extends Component
     super(props);
     this.state = 
     {
-      ipfsHash:'',
-      buffer:'',
-      ethAddress:'',
-      blockNumber:'',
-      transactionHash:'',
-      gasUsed:'', 
-      txReceipt: '',
       postContent: '',
       showModal: false,
-      userDirectoryHash: '',
+      userAddress: '',
       newsFeedPosts: [],
     }
 
     this.onSubmit = this.handleSubmit.bind(this);
+    this.deletePost = this.deletePost.bind(this);
     this.handleOpenModal = this.handleOpenModal.bind(this);
     this.handleCloseModal = this.handleCloseModal.bind(this);
   }
@@ -50,15 +44,17 @@ class App extends Component
   //	then posts to the user's messages directory.
   async addNewPostToIpfs(account, content, alias) {
     console.log("Adding new post:");
-
-  	const obj = {
-  		"alias": alias,
-  		"content": content,
-  		"timestamp": Date.now()
-  	};
   	// TODO: Will we need a unique file name for each post? Or will ipfs.files.write()
   	//	work better here?
     const id = uuidv1();
+
+    const obj = {
+      "alias": alias,
+      "content": content,
+      "timestamp": Date.now(),
+      "id": id.toString()
+    };
+
   	const path = '/' + account.toString() + '/messages/message' + id.toString() + '.txt';
   	console.log("Adding new post to " + path);
     const stringToWrite = JSON.stringify(obj, null, '  ')
@@ -69,7 +65,21 @@ class App extends Component
   		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});  }
+  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});  
+  }
+
+  deletePost(postId) {
+    const path = '/' + this.state.userAddress.toString() + '/messages/message' + postId.toString() + '.txt';
+    console.log(path);
+    ipfs.files.rm(path, (err) => {
+      if (err) {
+        console.error(err);
+      }
+      else {
+        this.getPosts(this.state.userAddress);
+      }
+    })
+  }
 
   // This method is called when a user is posting to Wisp for the first time. 
   //	Calls the addUserToFeedMap method in the FeedRegister contract, maps
@@ -145,26 +155,11 @@ class App extends Component
         }
         await this.makeNewUserDirectory(accounts[0], alias);
   	}
-  	// 3) Get user info from map
   	// 4) Add file to IPFS
   	await this.addNewPostToIpfs(accounts[0], this.state.postContent, alias);
     this.getPosts(accounts[0]);
-    // this.state.newsFeedPosts = [];
-    // const path = '/' + accounts[0].toString() + '/messages';
-    // ipfs.files.ls(path, { long : true }, (err, files) => {
-    //   files.forEach((file) => {
-    //     ipfs.files.read(path + '/' + file.name, (err, buf) => {
-    //       var obj = JSON.parse(buf.toString('utf8'));
-    //       this.state.newsFeedPosts.push(obj);
-    //       this.state.newsFeedPosts.sort((a, b) => {
-    //         return new Date(b.timestamp) - new Date(a.timestamp); 
-    //       })
-    //     })
-    //   })
-    // })
-  	// 5) Add file to existing user directory and update directory hash
   	// 6) Notify listeners that a feed has been updated
-    this.renderWisps();
+
     this.handleCloseModal(); 
   }; //onSubmit
 
@@ -179,66 +174,43 @@ class App extends Component
 
   getPosts(account) {
     const path = '/' + account.toString() + '/messages';
+    //ipfs.files.rm(path, {recursive:true});
     this.setState({newsFeedPosts : []});
     ipfs.files.ls(path, { long : true }, (err, files) => {
-      files.forEach((file) => {
-        ipfs.files.read(path + '/' + file.name, (err, buf) => {
-          var obj = JSON.parse(buf.toString('utf8'));
-          this.setState({
-            newsFeedPosts: this.state.newsFeedPosts.concat([obj])
-          });
-          //this.state.newsFeedPosts.push(obj);
-          this.state.newsFeedPosts.sort((a, b) => {
-            return new Date(b.timestamp) - new Date(a.timestamp); 
-          })
+      if (err) {
+        console.log(err);
+      }
+      if (files) {
+          files.forEach((file) => {
+            ipfs.files.read(path + '/' + file.name, (err, buf) => {
+              var obj = JSON.parse(buf.toString('utf8'));
+              console.log(obj);
+              this.setState({
+                newsFeedPosts: this.state.newsFeedPosts.concat([obj])
+              });
+              var postsToSort = this.state.newsFeedPosts;
+              postsToSort.sort((a, b) => {
+                  return new Date(b.timestamp) - new Date(a.timestamp);
+              })
+              this.setState({newsFeedPosts : postsToSort});
         })
       })
-    })
+      }
+      })
   }
 
   // This is a model for how the news feed will work. This method renders a dynamic amount of elements (Wisps).
   renderWisps() {
-    var elements = [];
-    for (var i = 0; i < this.state.newsFeedPosts.length; i++)
-    {
-      var obj = this.state.newsFeedPosts[i];
-      var time = moment(obj.timestamp).format("h:mm MM/DD/YYYY");
-      elements.push(
-      <div key={i}>
-        <div>
-          <div className="wispPost">
-            <header> 
-            <div className="wispPostOwner">
-            {obj.alias}
-            </div>
-            </header>
-            <div className="wispPostBody">
-              <div className="wispPostContent">
-              {obj.content}
-              </div>
-              <div>
-                <div>
-                  <button onClick={this.handleOpenModal} className="replyButton">
-                  Reply
-                  </button>
-                </div>
-                <div className="wispPostDate">
-                {time}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      )
-    }
-    return elements;
+    return this.state.newsFeedPosts.map((post, id) => {
+      return <Post id={post.id} alias={post.alias} content={post.content} timestamp={post.timestamp} key={id} deletePost={this.deletePost} replyButtonClicked={this.handleOpenModal}/>
+    })
   }
 
   async componentWillMount() {
     this.handleCloseModal();
     const accounts = await web3.eth.getAccounts();
     this.getPosts(accounts[0]);
+    this.setState({userAddress:accounts[0]});
   }
 
   // This method renders the main user interface for Wisp.
