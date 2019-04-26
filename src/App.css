@@ -61,6 +61,17 @@
   right: 32px;
 }
 
+.manageFeedButton {
+  background: #282c34;
+  border-radius: 8px;
+  color:#ffffff;
+  height: 32px;
+  width: 150px;
+  position: fixed;
+  top: 80px;
+  right: 32px;
+}
+
 .userActionButton {
   background: #282c34;
   border-radius: 8px;
