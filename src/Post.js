@@ -8,14 +8,19 @@ class Post extends Component {
 
 		this.handleDelete = this.handleDelete.bind(this); 
 		this.handleReply = this.handleReply.bind(this);
+		this.handleEdit = this.handleEdit.bind(this);
 	}
 
 	handleReply() {
-		this.props.replyButtonClicked();
+		this.props.replyPost();
 	}
 
 	handleDelete() {
 		this.props.deletePost(this.props.id);
+	}
+
+	handleEdit() {
+		this.props.editPost(this.props.content, this.props.id);
 	}
 
 	render() {
@@ -37,6 +42,9 @@ class Post extends Component {
                 <div>
                   <button onClick={this.handleReply} className="userActionButton">
                   Reply
+                  </button>
+                  <button onClick={this.handleEdit} className = "userActionButton">
+                  Edit
                   </button>
                   <button onClick={this.handleDelete} className="userActionButton">
                   Delete
