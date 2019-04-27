@@ -28,6 +28,8 @@ class App extends Component
       postContent: '',
       showModal: false,
       userAddress: '',
+      userAlias:'',
+      addressToReply:'',
       newsFeedPosts: [],
       postTypeButton: 'Send Wisp',
       postType: PostTypeEmum.NEW,
@@ -49,13 +51,18 @@ class App extends Component
     const accounts = await web3.eth.getAccounts();
     this.setState({userAddress:accounts[0]});
     this.getPosts(this.state.userAddress);
+    const results = await storehash.methods.getFeed(this.state.userAddress).call();
+
+    this.setState({userAlias:results._userAlias});
     //this.interval = setInterval(() => this.getPosts(this.state.userAddress), 30000);
   }
 
   // These methods are called whenever the post wisp modal is opened. Sets the state with appropriate data.
-  handleReply() {
+  handleReply(id, address) {
     this.setState({postTypeButton:'Reply'});
     this.setState({postType:PostTypeEmum.REPLY});
+    this.setState({messageId:id});
+    this.setState({addressToReply:address})
     this.handleOpenModal();
   }
 
@@ -97,6 +104,7 @@ class App extends Component
       await this.editWisp(this.state.postContent);
     }
     else if (this.state.postType === PostTypeEmum.REPLY) {
+      await this.newReplyWisp(this.state.postContent);
       console.log('reply');
     }
     else {
@@ -183,7 +191,10 @@ class App extends Component
       "alias": alias,
       "content": content,
       "timestamp": Date.now(),
-      "id": id.toString()
+      "id": id.toString(),
+      "address": this.state.userAddress,
+      "replies":[],
+      "isReply":false
     };
 
   	const path = '/' + account.toString() + '/messages/message' + id.toString() + '.txt';
@@ -196,7 +207,8 @@ class App extends Component
   		path: path,
   		content: await Buffer.from(stringToWrite)
   	}];
-  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});  
+  	await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});
+    this.getPosts(this.state.userAddress);  
   }
 
   // Called when a user edits an existing Wisp. Edits a post. Note that a user can only edit their own posts.
@@ -210,6 +222,32 @@ class App extends Component
       obj.timestamp = Date.now();
       const stringToWrite = JSON.stringify(obj, null, '  ').replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
       await ipfs.files.write(path, await Buffer.from(stringToWrite));
+      this.getPosts(this.state.userAddress);
+    })
+  }
+
+  async newReplyWisp(content) {
+    console.log('replying to post:');
+    const id = uuidv1();
+    const parentPath = '/' + this.state.addressToReply.toString() + '/messages/message' + this.state.messageId.toString() + '.txt';
+    console.log(parentPath);
+    const childPath = '/' + this.state.userAddress.toString() + '/messages/message' + id.toString() + '.txt';
+    await ipfs.files.read(parentPath, async (error, buf) => {
+      var obj = JSON.parse(buf.toString('utf8'));
+      obj.replies.push(childPath);
+      var stringToWrite = JSON.stringify(obj, null, '  ').replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+      await ipfs.files.write(parentPath, await Buffer.from(stringToWrite));
+      obj = {
+        "alias": this.state.userAlias,
+        "content": content,
+        timestamp: Date.now(),
+        "id": id.toString(),
+        "address": this.state.userAddress,
+        replies: [],
+        "isReply": true
+      };
+      stringToWrite = JSON.stringify(obj, null, '  ').replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
+      await ipfs.files.write(childPath, await Buffer.from(stringToWrite), {create:true, parents: true});
       this.getPosts(this.state.userAddress);
     })
   }
@@ -251,6 +289,7 @@ class App extends Component
           files.forEach((file) => {
             ipfs.files.read(path + '/' + file.name, (err, buf) => {
               var obj = JSON.parse(buf.toString('utf8'));
+              //console.log(obj);
               this.setState({
                 newsFeedPosts: this.state.newsFeedPosts.concat([obj])
               });
@@ -268,7 +307,7 @@ class App extends Component
   // This method renders the newsfeed. Maps each post to a Post.js object.
   renderWisps() {
     return this.state.newsFeedPosts.map((post, id) => {
-      return <Post id={post.id} alias={post.alias} content={post.content} timestamp={post.timestamp} key={id} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit}/>
+      return <Post post={post} key={id} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit}/>
     })
   }
 
