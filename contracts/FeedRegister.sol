@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.7;
 
 contract ImageRegister {
 
@@ -8,48 +8,101 @@ contract ImageRegister {
     }
 
     mapping (address => Feed) public userAddressToFeedMapping;
+    mapping (address => address[]) public userAddressToSubscribedAddressesMapping;
+    mapping (string => address) public userAliasToAddressMapping;
 
     event FeedUpdatedOrAdded(
         address _userAddress,
         string _userAlias,
         uint256 _dateLastModified
     );
+    
+    event GetAddressEvent(
+        string _userAlias,
+        bytes32 _userBytes,
+        address _userAddress
+    );
 
-    function() public {}
+    function() external {}
 
     function addOrUpdateFeed(
-        string _userAlias
-    ){
+        string memory _userAlias
+    ) public {
         require(bytes(_userAlias).length > 0 && bytes(_userAlias).length <= 256);
 
-        uint256 dateLastModified = now;
-        Feed memory feed = Feed(
-            _userAlias,
-            dateLastModified
-        );
-
-        userAddressToFeedMapping[msg.sender] = feed;
+        Feed storage feed = userAddressToFeedMapping[msg.sender];
+        
+        feed.userAlias = _userAlias;
+        feed.dateLastModified = now;
+        
+        userAliasToAddressMapping[_userAlias] = msg.sender;
 
         emit FeedUpdatedOrAdded(
             msg.sender,
-            _userAlias,
-            dateLastModified
+            feed.userAlias,
+            feed.dateLastModified
         );
     }
 
-    function getFeed(address _userAddress) 
+    function getFeed(address _userAddress) public view
     returns (
-        string _userAlias,
+        string memory _userAlias,
         uint256 _dateLastModified
     ) {
-
-        require(_userAddress != 0x0);
-
-        Feed storage feed = userAddressToFeedMapping[_userAddress];
+        Feed memory feed = userAddressToFeedMapping[_userAddress];
         
         return (
             feed.userAlias,
             feed.dateLastModified
         );
+    }
+
+    function getAddress (string memory _userAlias) 
+    public view returns (
+        address _address
+    ) {
+        return userAliasToAddressMapping[_userAlias];
+    }
+
+    function subscribe(
+        address _subscriber,
+        address _subscribed
+    ) public {
+        address[] storage subscribed = userAddressToSubscribedAddressesMapping[_subscriber];
+        subscribed.push(_subscribed);
+        userAddressToSubscribedAddressesMapping[_subscribed] = subscribed;
+    }
+
+    function unsubscribe(
+        address _subscriber,
+        address _subscribed
+    ) public {
+        address[] storage subscribedAddresses = userAddressToSubscribedAddressesMapping[_subscriber];
+        uint deletedIndex = 0;
+        bool deleted = false;
+        for (uint i = deletedIndex; i < subscribedAddresses.length-1; i++){
+            if (subscribedAddresses[i] == _subscribed)
+            {
+                deletedIndex = i;
+                delete subscribedAddresses[i];
+                deleted = true;
+            }
+        }
+
+        if (deleted)
+        {
+            for (uint j = deletedIndex; j < subscribedAddresses.length-1; j++){
+                subscribedAddresses[j] = subscribedAddresses[j+1]; 
+            }
+        }
+        subscribedAddresses.length--;
+    }
+
+    function getSubscribed(
+        address _subscriber
+    ) public view returns (
+        address[] memory _subscribedAddresses
+    ) {
+        return userAddressToSubscribedAddressesMapping[_subscriber];
     }
 }

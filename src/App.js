@@ -8,6 +8,7 @@ import {Container} from 'react-bootstrap';
 import {Button} from 'react-bootstrap';
 import {Form} from 'react-bootstrap';
 import Post from './Post.js';
+import ManageFeedForm from './ManageFeedForm.js';
 
 const uuidv1 = require('uuid/v1');
 
@@ -27,10 +28,12 @@ class App extends Component
     {
       postContent: '',
       showModal: false,
+      showManageFeedModal: false,
       userAddress: '',
       userAlias:'',
       addressToReply:'',
       newsFeedPosts: [],
+      subscribed: {},
       postTypeButton: 'Send Wisp',
       postType: PostTypeEmum.NEW,
       messageId: ''
@@ -44,6 +47,8 @@ class App extends Component
     this.handleOpenModal = this.handleOpenModal.bind(this);
     this.getPosts = this.getPosts.bind(this);
     this.handleCloseModal = this.handleCloseModal.bind(this);
+    this.handleOpenManageFeedModal = this.handleOpenManageFeedModal.bind(this);
+    this.handleCloseManageFeedModal = this.handleCloseManageFeedModal.bind(this);
   }
 
   // Called when page loads. Gets the user's ethereum address and stores it in state.
@@ -91,6 +96,12 @@ class App extends Component
     this.setState({ showModal: false });
   }
 
+  handleOpenManageFeedModal () {
+    this.setState({ showManageFeedModal: true });
+  }
+  
+  handleCloseManageFeedModal () {
+    this.setState({ showManageFeedModal: false });
   // This method is called whenever the user attempts to post a new wisp.
   //  Checks the PostTypeEnum to determine if the new wisp is a new post, an edit, or a reply.
   handleSubmit = async (event) => 
@@ -276,32 +287,77 @@ class App extends Component
     });
   }
 
-  // This method looks up the newsfeed. Anytime this method is called, the feed should automatically update.
   async getPosts(account) {
-    const path = '/' + this.state.userAddress.toString() + '/messages';
-    //ipfs.files.rm(path, {recursive:true});
+    var subscribedAccounts = [account];
+    const getSubscribedResults = await this.getSubscribedAddresses(account);
+    console.log("getSubscribedResults:");
+    console.log(getSubscribedResults);
+    subscribedAccounts = subscribedAccounts.concat(getSubscribedResults);
+
     this.setState({newsFeedPosts : []});
-    ipfs.files.ls(path, { long : true }, (err, files) => {
-      if (err) {
-        console.log(err);
-      }
-      if (files) {
-          files.forEach((file) => {
-            ipfs.files.read(path + '/' + file.name, (err, buf) => {
-              var obj = JSON.parse(buf.toString('utf8'));
-              //console.log(obj);
-              this.setState({
-                newsFeedPosts: this.state.newsFeedPosts.concat([obj])
-              });
-              var postsToSort = this.state.newsFeedPosts;
-              postsToSort.sort((a, b) => {
-                  return new Date(b.timestamp) - new Date(a.timestamp);
-              })
-              this.setState({newsFeedPosts : postsToSort});
+
+    subscribedAccounts.forEach((currentAccount) => {
+      console.log("Loading posts for account:");
+      console.log(currentAccount);
+
+      const path = '/' + currentAccount.toString() + '/messages';
+
+      ipfs.files.ls(path, { long : true }, (err, files) => {
+        if (err) {
+          console.log(err);
+        }
+        if (files) {
+            files.forEach((file) => {
+              ipfs.files.read(path + '/' + file.name, (err, buf) => {
+                var obj = JSON.parse(buf.toString('utf8'));
+                console.log(obj);
+                this.setState({
+                  newsFeedPosts: this.state.newsFeedPosts.concat([obj])
+                });
+          })
         })
-      })
-      }
-      })
+        }
+        });
+    });
+
+    var postsToSort = this.state.newsFeedPosts;
+    postsToSort.sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+    })
+    this.setState({newsFeedPosts : postsToSort});
+  }
+
+  async getSubscribedAddresses(address) {
+    console.log(address);
+    return await storehash.methods.getSubscribed(address).call();
+  }
+
+  async subscribeToAddress(address) {
+    const accounts = await web3.eth.getAccounts();
+    await storehash.methods.subscribe(accounts[0], address).call();
+  }
+
+  async unsubscribeToAddress(address) {
+    const accounts = await web3.eth.getAccounts();
+    await storehash.methods.unsubscribe(accounts[0], address).call();
+  }
+
+  async buildSubscribedStateObjects() {
+    console.log("building subscribed state objects");
+    const accounts = await web3.eth.getAccounts();
+    const account = accounts[0];
+    var subscribedAccounts = [account];
+    const getSubscribedResults = await this.getSubscribedAddresses(account);
+    subscribedAccounts = subscribedAccounts.concat(getSubscribedResults);    
+
+    this.setState({subscribed : {}});
+
+    for(var i = 0; i < subscribedAccounts.length; i++) {
+      const results = await storehash.methods.getFeed(subscribedAccounts[i]).call();
+      var timestamp = (new Date()).getTime();
+      this.state.subscribed[results._userAlias + timestamp] = results._userAlias;
+      this.setState({subscribed : this.state.subscribed})
+    }
   }
 
   // This method renders the newsfeed. Maps each post to a Post.js object.
@@ -311,6 +367,14 @@ class App extends Component
     })
   }
 
+  async componentWillMount() {
+    this.handleCloseModal();
+    const accounts = await web3.eth.getAccounts();
+    await this.buildSubscribedStateObjects();
+    await this.getPosts(accounts[0]);
+    this.setState({userAddress:accounts[0]});
+  }
+    
   // This method renders the main user interface for Wisp.
   render() 
   {
@@ -322,6 +386,9 @@ class App extends Component
          <h1>Wisp</h1>
          <button onClick={() => this.handleNewPost()} className="postWispButton">
          Post New Wisp
+         </button>
+         <button onClick={this.handleOpenManageFeedModal} className="manageFeedButton">
+         Manage Feed
          </button>
          </div>
       </header>
@@ -343,13 +410,25 @@ class App extends Component
             {this.state.postTypeButton}
         </Button>
         <button onClick={this.handleCloseModal} className="closeModalButton">
-          Cancel
+          Close
         </button>
       </Form>
       </Container>
       </Modal>
+      <Modal
+        isOpen={this.state.showManageFeedModal}
+        contentLabel="ManageFeedModal"
+        ariaHideApp={false}
+      >
+      <Container>
+        <h3 className="App-header">Manage Feed</h3>
+        <ManageFeedForm subscribed={this.state.subscribed} account={this.state.userAddress}/>
+        <button onClick={this.handleCloseManageFeedModal} className="closeModalButton">
+          Cancel
+        </button>
+      </Container>
+      </Modal>
       </div>
-      
       <div>
         {this.renderWisps()}
       </div>

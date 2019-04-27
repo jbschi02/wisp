@@ -1,6 +1,6 @@
 import web3 from './web3';
 
-const address = '0xd3be4adab9733a380cbfd7d52be39e6374832e3c';
+const address = '0xea3266fa5990db3d7c3d41e0556e8b77a757b684';
 
 const abi = [
 	{
@@ -50,6 +50,25 @@ const abi = [
 		"type": "function"
 	},
 	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "string"
+			}
+		],
+		"name": "userAliasToAddressMapping",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"constant": false,
 		"inputs": [
 			{
@@ -61,6 +80,103 @@ const abi = [
 		"outputs": [],
 		"payable": false,
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_subscriber",
+				"type": "address"
+			},
+			{
+				"name": "_subscribed",
+				"type": "address"
+			}
+		],
+		"name": "subscribe",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "_subscriber",
+				"type": "address"
+			}
+		],
+		"name": "getSubscribed",
+		"outputs": [
+			{
+				"name": "_subscribedAddresses",
+				"type": "address[]"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "_userAlias",
+				"type": "string"
+			}
+		],
+		"name": "getAddress",
+		"outputs": [
+			{
+				"name": "_address",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "_subscriber",
+				"type": "address"
+			},
+			{
+				"name": "_subscribed",
+				"type": "address"
+			}
+		],
+		"name": "unsubscribe",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "",
+				"type": "address"
+			},
+			{
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "userAddressToSubscribedAddressesMapping",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -88,6 +204,28 @@ const abi = [
 			}
 		],
 		"name": "FeedUpdatedOrAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"name": "_userAlias",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"name": "_userBytes",
+				"type": "bytes32"
+			},
+			{
+				"indexed": false,
+				"name": "_userAddress",
+				"type": "address"
+			}
+		],
+		"name": "GetAddressEvent",
 		"type": "event"
 	}
 ]
