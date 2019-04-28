@@ -1,11 +1,6 @@
 import './App.css';
 import React, { Component } from 'react';
-import Modal from 'react-modal';
-import {Container} from 'react-bootstrap';
-import {Button} from 'react-bootstrap';
-import {Form} from 'react-bootstrap';
 import storehash from './storehash';
-import web3 from './web3';
 
 class ManageFeedForm extends Component {
   constructor(props)
@@ -38,13 +33,13 @@ class ManageFeedForm extends Component {
       this.state.subscribed[subscribed + timestamp] = subscribed;
       this.setState({ subscribed : this.state.subscribed});
       
-      //await storehash.methods.subscribe(this.props.account, subscribedAddress).send({
-      //      from: this.props.account
-      //    }, (error, transactionHash) => {
-      //      if (error) {
-      //        console.log(error);
-      //      }
-      //    });
+      await storehash.methods.subscribe(this.props.account, subscribedAddress).send({
+           from: this.props.account
+         }, (error, transactionHash) => {
+           if (error) {
+             console.log(error);
+           }
+         });
     }
   }
 }

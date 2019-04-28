@@ -60,6 +60,18 @@ class Post extends Component {
  		})
  	}
 
+ 	getEditButton() {
+ 		if (this.props.userAddress === this.props.post.address) {
+ 			return <button onClick={this.handleEdit} className="userActionButton">Edit</button>
+ 		}
+ 	}
+
+ 	getDeleteButton() {
+ 		if (this.props.userAddress === this.props.post.address) {
+ 			return <button onClick={this.handleDelete} className="userActionButton">Delete</button>
+ 		}
+ 	}
+
 	render() {
 		var time = moment(this.props.post.timestamp).format("h:mm MM/DD/YYYY");
 		if (this.props.post.isReply) {
@@ -83,12 +95,8 @@ class Post extends Component {
                   <button onClick={this.handleReply} className="userActionButton">
                   Reply
                   </button>
-                  <button onClick={this.handleEdit} className = "userActionButton">
-                  Edit
-                  </button>
-                  <button onClick={this.handleDelete} className="userActionButton">
-                  Delete
-                  </button>
+                  {this.getEditButton()}
+                  {this.getDeleteButton()}
                   <button onClick={this.openRepliesModal} className="viewRepliesButton">
                   View Replies
                   </button>
