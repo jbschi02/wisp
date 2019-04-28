@@ -104,6 +104,8 @@ class App extends Component
     this.setState({ showManageFeedModal: false });
   // This method is called whenever the user attempts to post a new wisp.
   //  Checks the PostTypeEnum to determine if the new wisp is a new post, an edit, or a reply.
+  }
+
   handleSubmit = async (event) => 
   {
     event.preventDefault();
@@ -290,15 +292,15 @@ class App extends Component
   async getPosts(account) {
     var subscribedAccounts = [account];
     const getSubscribedResults = await this.getSubscribedAddresses(account);
-    console.log("getSubscribedResults:");
-    console.log(getSubscribedResults);
+    //console.log("getSubscribedResults:");
+    //console.log(getSubscribedResults);
     subscribedAccounts = subscribedAccounts.concat(getSubscribedResults);
 
     this.setState({newsFeedPosts : []});
 
     subscribedAccounts.forEach((currentAccount) => {
-      console.log("Loading posts for account:");
-      console.log(currentAccount);
+      //console.log("Loading posts for account:");
+      //console.log(currentAccount);
 
       const path = '/' + currentAccount.toString() + '/messages';
 
@@ -310,10 +312,15 @@ class App extends Component
             files.forEach((file) => {
               ipfs.files.read(path + '/' + file.name, (err, buf) => {
                 var obj = JSON.parse(buf.toString('utf8'));
-                console.log(obj);
+                //console.log(obj);
                 this.setState({
                   newsFeedPosts: this.state.newsFeedPosts.concat([obj])
                 });
+                var postsToSort = this.state.newsFeedPosts;
+                postsToSort.sort((a, b) => {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+                })
+              this.setState({newsFeedPosts : postsToSort});
           })
         })
         }
@@ -343,7 +350,7 @@ class App extends Component
   }
 
   async buildSubscribedStateObjects() {
-    console.log("building subscribed state objects");
+    //console.log("building subscribed state objects");
     const accounts = await web3.eth.getAccounts();
     const account = accounts[0];
     var subscribedAccounts = [account];
@@ -363,7 +370,7 @@ class App extends Component
   // This method renders the newsfeed. Maps each post to a Post.js object.
   renderWisps() {
     return this.state.newsFeedPosts.map((post, id) => {
-      return <Post post={post} key={id} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit}/>
+      return <Post post={post} key={id} userAddress={this.state.userAddress} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit}/>
     })
   }
 
