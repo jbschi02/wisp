@@ -21,6 +21,7 @@ class Post extends Component {
 		this.handleReply = this.handleReply.bind(this);
 		this.handleEdit = this.handleEdit.bind(this);
 		this.openRepliesModal = this.openRepliesModal.bind(this);
+    this.handleSharePost = this.handleSharePost.bind(this);
 	}
 
   async componentDidMount() {
@@ -53,6 +54,10 @@ class Post extends Component {
 	handleEdit() {
 		this.props.editPost(this.props.post.content, this.props.post.id);
 	}
+
+  handleSharePost() {
+    this.props.sharePost(this.props.post.content, this.props.post.alias);
+  }
 
  	getReplies() {
  		return this.state.replies.map((post, id) => {
@@ -99,6 +104,9 @@ class Post extends Component {
                   {this.getDeleteButton()}
                   <button onClick={this.openRepliesModal} className="viewRepliesButton">
                   View Replies
+                  </button>
+                  <button onClick={this.handleSharePost} className="sharePostButton">
+                  Share
                   </button>
                 </div>
                 <div className="wispPostDate">

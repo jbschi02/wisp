@@ -42,6 +42,7 @@ class App extends Component
     this.onSubmit = this.handleSubmit.bind(this);
     this.handleReply = this.handleReply.bind(this);
     this.handleEdit = this.handleEdit.bind(this);
+    this.handleSharePost = this.handleSharePost.bind(this);
     this.handleNewPost = this.handleNewPost.bind(this);
     this.deletePost = this.deletePost.bind(this);
     this.handleOpenModal = this.handleOpenModal.bind(this);
@@ -64,6 +65,10 @@ class App extends Component
 
   // These methods are called whenever the post wisp modal is opened. Sets the state with appropriate data.
   handleReply(id, address) {
+    console.log("handling reply");
+    console.log(id);
+    console.log(address);
+
     this.setState({postTypeButton:'Reply'});
     this.setState({postType:PostTypeEmum.REPLY});
     this.setState({messageId:id});
@@ -280,6 +285,10 @@ class App extends Component
     })
   }
 
+  async handleSharePost(content, alias) {
+    await this.addNewPostToIpfs(this.state.userAddress, content, 'Reposted By ' + this.state.userAlias + ' Via '+ alias);
+  }
+
   // This method handles changes to a text area.
   handleChange(e, field) 
   {
@@ -370,7 +379,7 @@ class App extends Component
   // This method renders the newsfeed. Maps each post to a Post.js object.
   renderWisps() {
     return this.state.newsFeedPosts.map((post, id) => {
-      return <Post post={post} key={id} userAddress={this.state.userAddress} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit}/>
+      return <Post post={post} key={id} userAddress={this.state.userAddress} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit} sharePost={this.handleSharePost}/>
     })
   }
 
