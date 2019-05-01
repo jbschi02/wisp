@@ -53,6 +53,13 @@ class App extends Component
   }
 
   // Called when page loads. Gets the user's ethereum address and stores it in state.
+  async componentWillMount() {
+    this.handleCloseModal();
+    const accounts = await web3.eth.getAccounts();
+    await this.buildSubscribedStateObjects();
+    this.setState({userAddress:accounts[0]});
+  }
+  
   async componentDidMount() {
     const accounts = await web3.eth.getAccounts();
     this.setState({userAddress:accounts[0]});
@@ -60,15 +67,10 @@ class App extends Component
     const results = await storehash.methods.getFeed(this.state.userAddress).call();
 
     this.setState({userAlias:results._userAlias});
-    //this.interval = setInterval(() => this.getPosts(this.state.userAddress), 30000);
   }
 
   // These methods are called whenever the post wisp modal is opened. Sets the state with appropriate data.
   handleReply(id, address) {
-    console.log("handling reply");
-    console.log(id);
-    console.log(address);
-
     this.setState({postTypeButton:'Reply'});
     this.setState({postType:PostTypeEmum.REPLY});
     this.setState({messageId:id});
@@ -101,12 +103,14 @@ class App extends Component
     this.setState({ showModal: false });
   }
 
+  // These methods handle the opening and closing of the manage feed modal.
   handleOpenManageFeedModal () {
     this.setState({ showManageFeedModal: true });
   }
   
   handleCloseManageFeedModal () {
     this.setState({ showManageFeedModal: false });
+
   // This method is called whenever the user attempts to post a new wisp.
   //  Checks the PostTypeEnum to determine if the new wisp is a new post, an edit, or a reply.
   }
@@ -123,7 +127,6 @@ class App extends Component
     }
     else if (this.state.postType === PostTypeEmum.REPLY) {
       await this.newReplyWisp(this.state.postContent);
-      console.log('reply');
     }
     else {
       console.error("Unrecognized post type.");
@@ -173,7 +176,6 @@ class App extends Component
       path: path,
       content: await Buffer.from(stringToWrite)
     }];
-    console.log(file);
     await ipfs.files.write(file[0].path, file[0].content, {create: true, parents: true});
     this.addUserToFeedMap(alias, account);
   }
@@ -238,12 +240,15 @@ class App extends Component
       var obj = JSON.parse(buf.toString('utf8'));
       obj.content = content;
       obj.timestamp = Date.now();
+      console.log(obj);
       const stringToWrite = JSON.stringify(obj, null, '  ').replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&');
       await ipfs.files.write(path, await Buffer.from(stringToWrite));
       this.getPosts(this.state.userAddress);
     })
   }
 
+  // Called whenever a user replies to a post. First retrieves the post that is being replied to, then adds a link to the new
+  //    reply in its replies JSON field. Proceeds to upload the new reply with the isReply tag set to true.
   async newReplyWisp(content) {
     console.log('replying to post:');
     const id = uuidv1();
@@ -285,6 +290,7 @@ class App extends Component
     })
   }
 
+  // Handles the sharing of a post by tagging the original user, and reposting in the current user's message directory.
   async handleSharePost(content, alias) {
     await this.addNewPostToIpfs(this.state.userAddress, content, 'Reposted By ' + this.state.userAlias + ' Via '+ alias);
   }
@@ -298,19 +304,16 @@ class App extends Component
     });
   }
 
+  // Gets the necessary posts for the newsfeed. First compiles the list of addresses to which the current user is subscribed.
+  //    Then finds all posts from that user and adds them to the newsFeedPosts.
   async getPosts(account) {
     var subscribedAccounts = [account];
     const getSubscribedResults = await this.getSubscribedAddresses(account);
-    //console.log("getSubscribedResults:");
-    //console.log(getSubscribedResults);
     subscribedAccounts = subscribedAccounts.concat(getSubscribedResults);
 
     this.setState({newsFeedPosts : []});
 
     subscribedAccounts.forEach((currentAccount) => {
-      //console.log("Loading posts for account:");
-      //console.log(currentAccount);
-
       const path = '/' + currentAccount.toString() + '/messages';
 
       ipfs.files.ls(path, { long : true }, (err, files) => {
@@ -335,14 +338,9 @@ class App extends Component
         }
         });
     });
-
-    var postsToSort = this.state.newsFeedPosts;
-    postsToSort.sort((a, b) => {
-        return new Date(b.timestamp) - new Date(a.timestamp);
-    })
-    this.setState({newsFeedPosts : postsToSort});
   }
 
+  // There methods handle the logic of building and reading from the list of subscriptions of the current user.
   async getSubscribedAddresses(address) {
     console.log(address);
     return await storehash.methods.getSubscribed(address).call();
@@ -382,14 +380,6 @@ class App extends Component
       return <Post post={post} key={id} userAddress={this.state.userAddress} deletePost={this.deletePost} replyPost={this.handleReply} editPost={this.handleEdit} sharePost={this.handleSharePost}/>
     })
   }
-
-  async componentWillMount() {
-    this.handleCloseModal();
-    const accounts = await web3.eth.getAccounts();
-    await this.buildSubscribedStateObjects();
-    await this.getPosts(accounts[0]);
-    this.setState({userAddress:accounts[0]});
-  }
     
   // This method renders the main user interface for Wisp.
   render() 
@@ -399,6 +389,9 @@ class App extends Component
       <div className="App">
       <header className="App-header"> 
          <div className="main">
+         <div className="signedIn">
+         Signed in as: {this.state.userAlias}
+         </div>
          <h1>Wisp</h1>
          <button onClick={() => this.handleNewPost()} className="postWispButton">
          Post New Wisp
